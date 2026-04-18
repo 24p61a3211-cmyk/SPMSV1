@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Login | SPMS{% endblock %}
+{% block content %}
+<section class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="hero-card p-4 p-lg-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6">
+                    <span class="eyebrow">Student Progress Monitoring System</span>
+                    <h1 class="display-6 fw-semibold mt-3 mb-3">A simple, clean portal for student performance tracking.</h1>
+                    <p class="lead text-secondary mb-4">Parents can monitor attendance and marks in one place, while admins can keep records updated for the next demo.</p>
+                    <div class="small text-secondary">
+                        <div>Admin login: <strong>admin</strong> / <strong>admin123</strong></div>
+                        <div>Parent login: <strong>parent_ravi</strong> / <strong>parent123</strong></div>
+                    </div>
+                </div>
+                <div class="col-lg-5 ms-lg-auto">
+                    <div class="panel-card p-4">
+                        <h2 class="h4 mb-3">Login</h2>
+                        <form method="post" action="{{ url_for('login') }}" class="vstack gap-3">
+                            <div>
+                                <label class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" placeholder="Enter username" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100">Sign In</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

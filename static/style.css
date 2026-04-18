@@ -1,0 +1,90 @@
+body {
+    font-family: "Outfit", sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(42, 157, 143, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(233, 196, 106, 0.18), transparent 24%),
+        #f7f4ef;
+    color: #1f2933;
+}
+
+.navbar-brand {
+    letter-spacing: 0.08em;
+}
+
+.hero-card,
+.panel-card,
+.metric-card {
+    border: 1px solid rgba(38, 70, 83, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(31, 41, 51, 0.06);
+}
+
+.hero-card {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+}
+
+.eyebrow {
+    display: inline-block;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(42, 157, 143, 0.12);
+    color: #1f5c57;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.metric-card {
+    padding: 1.25rem;
+    height: 100%;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.88rem;
+    color: #52606d;
+    margin-bottom: 0.6rem;
+}
+
+.metric-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #102a43;
+}
+
+.table > :not(caption) > * > * {
+    background: transparent;
+}
+
+.btn-dark {
+    background: #264653;
+    border-color: #264653;
+}
+
+.btn-dark:hover,
+.btn-dark:focus {
+    background: #1d3741;
+    border-color: #1d3741;
+}
+
+.form-control,
+.form-select {
+    border-radius: 14px;
+    padding: 0.8rem 0.95rem;
+}
+
+@media print {
+    .navbar,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+    }
+}
