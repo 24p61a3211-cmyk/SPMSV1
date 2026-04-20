@@ -7,8 +7,14 @@ body {
     color: #1f2933;
 }
 
+.navbar-brand img {
+    max-height: 100px;
+    width: auto;
+}
+
 .navbar-brand {
-    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
 }
 
 .hero-card,
