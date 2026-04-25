@@ -16,7 +16,7 @@
         <div class="container">
             <a class="navbar-brand fw-semibold" href="{{ url_for('login_page') }}">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="SPMS Logo" height="40" class="me-2">
-                
+                <span class="d-none d-sm-inline">SPMS</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -29,6 +29,14 @@
                         {% else %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a></li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link d-inline-flex align-items-center gap-2" href="#notifications-center">
+                                Notifications
+                                {% if unread_notifications_count %}
+                                    <span class="badge rounded-pill text-bg-danger">{{ unread_notifications_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                         <li class="nav-item"><span class="nav-link text-secondary">{{ current_user.username }}</span></li>
                         <li class="nav-item"><a class="btn btn-sm btn-outline-dark" href="{{ url_for('logout') }}">Logout</a></li>
                     {% endif %}

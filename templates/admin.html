@@ -4,20 +4,20 @@
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
     <div>
         <span class="eyebrow">Admin Panel</span>
-        <h1 class="h2 mt-2 mb-1">Manage students, attendance, and marks</h1>
-        <p class="text-secondary mb-0">Everything is kept lightweight so you can demo it easily on localhost.</p>
+        <h1 class="h2 mt-2 mb-1">Manage students, analytics, import, and alerts</h1>
+        <p class="text-secondary mb-0">Bulk import, monitor risk trends, and track notifications from one place.</p>
     </div>
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="panel-card p-4 h-100">
             <h2 class="h5 mb-3">Add Student</h2>
             <form method="post" action="{{ url_for('add_student') }}" class="vstack gap-3">
                 <input class="form-control" type="text" name="name" placeholder="Student name" required>
                 <input class="form-control" type="text" name="roll_no" placeholder="Roll number" required>
                 <input class="form-control" type="text" name="branch" placeholder="Branch" required>
-                <input class="form-control" type="number" min="1" max="4" name="year" placeholder="Year" required>
+                <input class="form-control" type="number" min="1" max="6" name="year" placeholder="Year" required>
                 <select class="form-select" name="parent_id" required>
                     <option value="">Select parent account</option>
                     {% for parent in parents %}
@@ -28,7 +28,7 @@
             </form>
         </div>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="panel-card p-4 h-100">
             <h2 class="h5 mb-3">Add Attendance</h2>
             <form method="post" action="{{ url_for('add_attendance') }}" class="vstack gap-3">
@@ -48,7 +48,7 @@
             </form>
         </div>
     </div>
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="panel-card p-4 h-100">
             <h2 class="h5 mb-3">Add Marks</h2>
             <form method="post" action="{{ url_for('add_marks') }}" class="vstack gap-3">
@@ -70,9 +70,145 @@
             </form>
         </div>
     </div>
+    <div class="col-lg-3">
+        <div class="panel-card p-4 h-100">
+            <h2 class="h5 mb-3">Excel Import</h2>
+            <form method="post" action="{{ url_for('admin_import_preview') }}" enctype="multipart/form-data" class="vstack gap-3">
+                <input class="form-control" type="file" name="workbook" accept=".xlsx,.xlsm,.xls" required>
+                <div class="small text-secondary">
+                    Required sheets: <strong>Students</strong>, <strong>Attendance</strong>, <strong>Marks</strong>.
+                </div>
+                <button class="btn btn-dark" type="submit">Preview Import</button>
+            </form>
+        </div>
+    </div>
 </div>
 
-<div class="panel-card p-4">
+{% if import_preview %}
+    <div class="panel-card p-4 mb-4 import-preview">
+        <h2 class="h5 mb-3">Import Preview: {{ import_preview.filename }}</h2>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4"><div class="metric-chip">Students: <strong>{{ import_preview.summary.students }}</strong></div></div>
+            <div class="col-md-4"><div class="metric-chip">Attendance rows: <strong>{{ import_preview.summary.attendance }}</strong></div></div>
+            <div class="col-md-4"><div class="metric-chip">Marks rows: <strong>{{ import_preview.summary.marks }}</strong></div></div>
+        </div>
+
+        {% if import_preview.errors %}
+            <div class="alert alert-danger mb-3">
+                <div class="fw-semibold mb-2">Validation errors</div>
+                <ul class="mb-0">
+                    {% for error in import_preview.errors[:20] %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    {% if import_preview.errors|length > 20 %}
+                        <li>... and {{ import_preview.errors|length - 20 }} more errors.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        {% else %}
+            <div class="alert alert-success mb-3">Workbook is valid. Confirm to apply upsert changes.</div>
+            <form method="post" action="{{ url_for('admin_import_confirm') }}">
+                <input type="hidden" name="preview_token" value="{{ import_preview.token }}">
+                <button class="btn btn-dark" type="submit">Confirm Import</button>
+            </form>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if import_result %}
+    <div class="panel-card p-4 mb-4">
+        <h2 class="h5 mb-3">Import Result</h2>
+        <div class="row g-3 mb-3">
+            <div class="col-md-3"><div class="metric-chip">Students inserted: <strong>{{ import_result.students_inserted }}</strong></div></div>
+            <div class="col-md-3"><div class="metric-chip">Students updated: <strong>{{ import_result.students_updated }}</strong></div></div>
+            <div class="col-md-3"><div class="metric-chip">Attendance inserted: <strong>{{ import_result.attendance_inserted }}</strong></div></div>
+            <div class="col-md-3"><div class="metric-chip">Attendance updated: <strong>{{ import_result.attendance_updated }}</strong></div></div>
+            <div class="col-md-3"><div class="metric-chip">Marks inserted: <strong>{{ import_result.marks_inserted }}</strong></div></div>
+            <div class="col-md-3"><div class="metric-chip">Marks updated: <strong>{{ import_result.marks_updated }}</strong></div></div>
+        </div>
+
+        {% if import_result.parents_created %}
+            <div class="alert alert-warning">
+                <div class="fw-semibold mb-2">New parent accounts created</div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Temporary Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account in import_result.parents_created %}
+                                <tr>
+                                    <td>{{ account.username }}</td>
+                                    <td><code>{{ account.temporary_password }}</code></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if import_result.errors %}
+            <div class="alert alert-danger mb-0">
+                <div class="fw-semibold mb-2">Warnings / skipped rows</div>
+                <ul class="mb-0">
+                    {% for error in import_result.errors[:20] %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    {% if import_result.errors|length > 20 %}
+                        <li>... and {{ import_result.errors|length - 20 }} more warnings.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="panel-card p-4 h-100 chart-shell">
+            <h2 class="h5 mb-1">Cohort Risk Distribution</h2>
+            <p class="chart-subtitle mb-3">Low, medium, and high risk split across all students.</p>
+            <canvas id="cohortRiskChart" height="180"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="panel-card p-4 h-100">
+            <h2 class="h5 mb-3">Spotlight</h2>
+            <div class="spotlight-list mb-3">
+                <div class="fw-semibold mb-2">Low Attendance (&lt; 75%)</div>
+                {% if low_attendance_students %}
+                    {% for row in low_attendance_students[:5] %}
+                        <div class="spotlight-row">
+                            <span>{{ row.name }} ({{ row.roll_no }})</span>
+                            <span class="badge text-bg-warning">{{ row.attendance_pct }}%</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-secondary small">No students below threshold.</div>
+                {% endif %}
+            </div>
+            <div class="spotlight-list">
+                <div class="fw-semibold mb-2">Backlog Subjects (&lt; 40%)</div>
+                {% if backlog_students %}
+                    {% for row in backlog_students[:5] %}
+                        <div class="spotlight-row">
+                            <span>{{ row.name }} ({{ row.roll_no }})</span>
+                            <span class="badge text-bg-danger">{{ row.count }} subject(s)</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-secondary small">No backlog alerts.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel-card p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h5 mb-0">Student Overview</h2>
         <span class="text-secondary small">{{ student_rows|length }} students</span>
@@ -86,6 +222,7 @@
                     <th>Attendance</th>
                     <th>Average Marks</th>
                     <th>Risk</th>
+                    <th>Backlog</th>
                     <th></th>
                 </tr>
             </thead>
@@ -94,12 +231,16 @@
                     <tr>
                         <td>
                             <div class="fw-semibold">{{ row.student.name }}</div>
-                            <div class="text-secondary small">{{ row.student.branch }} • Year {{ row.student.year }}</div>
+                            <div class="text-secondary small">{{ row.student.branch }} | Year {{ row.student.year }}</div>
                         </td>
                         <td>{{ row.student.roll_no }}</td>
                         <td>{{ row.metrics.attendance_pct }}%</td>
                         <td>{{ row.metrics.avg_marks }}%</td>
-                        <td><span class="badge text-bg-{{ row.metrics.risk_tone }}">{{ row.metrics.risk_label }}</span></td>
+                        <td>
+                            <span class="badge text-bg-{{ row.metrics.risk_tone }}">{{ row.metrics.risk_label }}</span>
+                            <div class="small text-secondary mt-1">{{ row.metrics.risk_score }}/100</div>
+                        </td>
+                        <td>{{ row.metrics.backlog_count }}</td>
                         <td><a class="btn btn-sm btn-outline-dark" href="{{ url_for('student_detail', student_id=row.student.id) }}">Open</a></td>
                     </tr>
                 {% endfor %}
@@ -107,4 +248,43 @@
         </table>
     </div>
 </div>
+
+<div class="panel-card p-4" id="notifications-center">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+        <h2 class="h5 mb-0">Notification Center</h2>
+        <form method="post" action="{{ url_for('mark_all_notifications_read') }}">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Mark all as read</button>
+        </form>
+    </div>
+    {% if notifications %}
+        <div class="notification-list">
+            {% for notification in notifications %}
+                <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                    <div class="notification-meta">
+                        <div class="fw-semibold">{{ notification.title }}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="severity-dot {{ notification.severity|default('info') }}"></span>
+                            <small class="text-secondary">{{ notification.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
+                        </div>
+                    </div>
+                    <p class="mb-2">{{ notification.message }}</p>
+                    {% if not notification.is_read %}
+                        <form method="post" action="{{ url_for('mark_notification_read', notification_id=notification.id) }}">
+                            <button class="btn btn-sm btn-dark" type="submit">Mark read</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-secondary mb-0">No active notifications.</p>
+    {% endif %}
+</div>
+
+<script id="admin-data" type="application/json">{{ admin_payload | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 {% endblock %}

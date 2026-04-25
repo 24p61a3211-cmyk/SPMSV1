@@ -11,7 +11,7 @@
         <div>
             <span class="eyebrow">Parent Dashboard</span>
             <h1 class="h2 mt-2 mb-1">{{ selected_student.name }}</h1>
-            <p class="text-secondary mb-0">{{ selected_student.roll_no }} • {{ selected_student.branch }} • Year {{ selected_student.year }}</p>
+            <p class="text-secondary mb-0">{{ selected_student.roll_no }} | {{ selected_student.branch }} | Year {{ selected_student.year }}</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             {% for student in students %}
@@ -42,72 +42,115 @@
         <div class="col-md-6 col-xl-3">
             <div class="metric-card">
                 <span class="metric-label">Risk Level</span>
-                <div class="metric-value"><span class="badge text-bg-{{ metrics.risk_tone }}">{{ metrics.risk_label }}</span></div>
+                <div class="metric-value">
+                    <span class="badge text-bg-{{ metrics.risk_tone }}">{{ metrics.risk_label }}</span>
+                    <span class="risk-score-pill">{{ metrics.risk_score }}/100</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
         <div class="col-lg-7">
-            <div class="panel-card p-4 h-100">
+            <div class="panel-card p-4 h-100 chart-shell">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 mb-0">Average Subject Marks</h2>
+                    <h2 class="h5 mb-0">Subject Performance</h2>
                     <a class="btn btn-sm btn-outline-dark" href="{{ url_for('student_detail', student_id=selected_student.id) }}">View full record</a>
                 </div>
-                <canvas id="marksChart" height="160"></canvas>
+                <p class="chart-subtitle mb-3">Average percentage by subject.</p>
+                <canvas id="subjectPerformanceChart" height="160"></canvas>
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="panel-card p-4 h-100">
-                <h2 class="h5 mb-3">Monthly Attendance Trend</h2>
-                <canvas id="attendanceChart" height="160"></canvas>
+            <div class="panel-card p-4 h-100 chart-shell">
+                <h2 class="h5 mb-1">Risk Meter</h2>
+                <p class="chart-subtitle mb-3">Combined score from attendance, marks, and assignments.</p>
+                <canvas id="riskGaugeChart" height="165"></canvas>
+                <div class="small text-secondary mt-3">
+                    <div>Attendance: <strong>{{ metrics.attendance_pct }}%</strong></div>
+                    <div>Average marks: <strong>{{ metrics.avg_marks }}%</strong></div>
+                    <div>Assignments: <strong>{{ metrics.assignments_submitted_pct }}%</strong></div>
+                </div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="panel-card p-4 chart-shell">
+                <h2 class="h5 mb-1">Classical Attendance Overview</h2>
+                <p class="chart-subtitle mb-3">Monthly present vs absent classes.</p>
+                <canvas id="attendanceClassicChart" height="150"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="panel-card p-4 h-100">
+                <h2 class="h5 mb-3">Attendance Table</h2>
+                <div class="table-responsive attendance-mini-table">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Present</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in metrics.attendance_table %}
+                                <tr>
+                                    <td>{{ row.month }}</td>
+                                    <td>{{ row.present }}/{{ row.total }}</td>
+                                    <td>{{ row.pct }}%</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="3" class="text-secondary">No attendance data yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card p-4" id="notifications-center">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+            <h2 class="h5 mb-0">Notifications</h2>
+            <form method="post" action="{{ url_for('mark_all_notifications_read') }}">
+                <button class="btn btn-sm btn-outline-dark" type="submit">Mark all as read</button>
+            </form>
+        </div>
+        {% if notifications %}
+            <div class="notification-list">
+                {% for notification in notifications %}
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                        <div class="notification-meta">
+                            <div class="fw-semibold">{{ notification.title }}</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="severity-dot {{ notification.severity|default('info') }}"></span>
+                                <small class="text-secondary">{{ notification.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
+                            </div>
+                        </div>
+                        <p class="mb-2">{{ notification.message }}</p>
+                        {% if not notification.is_read %}
+                            <form method="post" action="{{ url_for('mark_notification_read', notification_id=notification.id) }}">
+                                <button class="btn btn-sm btn-dark" type="submit">Mark read</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-secondary mb-0">No active notifications.</p>
+        {% endif %}
+    </div>
+
+    <script id="dashboard-data" type="application/json">{{ dashboard_payload | tojson }}</script>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 {% if metrics %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    new Chart(document.getElementById('marksChart'), {
-        type: 'bar',
-        data: {
-            labels: {{ metrics.marks_chart["labels"] | tojson }},
-            datasets: [{
-                label: 'Average %',
-                data: {{ metrics.marks_chart["values"] | tojson }},
-                backgroundColor: '#264653',
-                borderRadius: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, max: 100 } }
-        }
-    });
-
-    new Chart(document.getElementById('attendanceChart'), {
-        type: 'line',
-        data: {
-            labels: {{ metrics.attendance_chart["labels"] | tojson }},
-            datasets: [{
-                label: 'Attendance %',
-                data: {{ metrics.attendance_chart["values"] | tojson }},
-                borderColor: '#e76f51',
-                backgroundColor: 'rgba(231, 111, 81, 0.15)',
-                tension: 0.35,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, max: 100 } }
-        }
-    });
-</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endif %}
 {% endblock %}
